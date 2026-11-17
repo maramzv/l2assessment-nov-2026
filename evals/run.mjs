@@ -1,6 +1,7 @@
 // node evals/run.mjs legacy|rules|ai   (ai needs GROQ_API_KEY)
 import Groq from 'groq-sdk'
-import { messages } from './messages.mjs'
+const set = process.argv[3] === 'holdout' ? './messages-holdout.mjs' : './messages.mjs'
+const { messages } = await import(set)
 import { legacyUrgency } from './legacy-urgency.mjs'
 import { resolveUrgency } from '../src/utils/urgencyScorer.js'
 import { analyzeWithClient } from '../src/utils/llmHelper.js'

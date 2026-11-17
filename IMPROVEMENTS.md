@@ -20,22 +20,26 @@ The product only works if it (1) routes messages correctly and (2) never lets an
 `evals/messages.mjs` has 14 messages (outages, shouting, politeness, negation "the site is *not* down", Spanish, mixed billing/technical). Acceptable answers are fixed in advance.
 
 ```bash
-node evals/run.mjs legacy   # original urgency logic
-node evals/run.mjs rules    # new safety-net rules only, no AI
-GROQ_API_KEY=... node evals/run.mjs ai   # full new pipeline
+node evals/run.mjs legacy [holdout]   # original urgency logic
+node evals/run.mjs rules              # new safety-net rules only, no AI
+GROQ_API_KEY=... node evals/run.mjs ai [holdout]   # full new pipeline
 ```
 
-| Version | Urgency correct (14) | High-urgency messages missed |
-|---|---|---|
-| Original logic | 5/14 | 7 of 7 |
-| New rules only (no AI) | 9/14 | 1 of 7 |
-| New full pipeline (AI + rules) | **not yet measured** | - |
+`messages.mjs` (14) was written while looking at the problems. `messages-holdout.mjs` (8) was written after the fix with expectations fixed before running, so it is the fairer test.
 
-The "rules only" row is a floor: it has no AI, so it cannot tell a feature request from a general question. It shows the safety net alone fixes most missed emergencies.
+| Set | Version | Urgency correct | Category correct | High messages missed |
+|---|---|---|---|---|
+| Main (14) | Original logic | 5/14 | n/a | 7 of 7 |
+| Main (14) | New rules only (no AI) | 9/14 | n/a | 1 |
+| Main (14) | **New full pipeline** | **14/14** | **14/14** | **0** |
+| Held-out (8) | Original logic | 4/8 | n/a | 3 |
+| Held-out (8) | **New full pipeline** | **8/8** | **8/8** | **0** |
+
+The original code's category step was not re-run (its model is retired, so it only produced fake keyword answers). The original urgency score also depends on the clock, so its numbers were taken on a weekday.
 
 ## Limitations / next steps
 
-- The live AI run was not completed because no Groq API key was available when I built this. AI-quality claims are untested until `node evals/run.mjs ai` is run.
-- Small sample, one run, LLM not deterministic.
+- The main set is not a fair test of the fix (I wrote it with the problems in view); the held-out set is the better evidence, but both are small.
+- Small sample (22 messages), one run each, LLM not deterministic. This shows a clear improvement, not a precise accuracy figure.
 - API key is still exposed in the browser (`dangerouslyAllowBrowser`); move the call to a backend before real use.
 - Next: agent feedback loop to correct labels, real routing to named teams, and fixing the pre-existing lint errors in `DashboardPage`, `HistoryPage`, `HomePage`.
