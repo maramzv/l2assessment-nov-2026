@@ -1,43 +1,41 @@
 /**
- * Recommendation Templates - Maps categories to recommended actions
+ * Recommendation Templates - category (+ urgency) -> recommended action
  */
 
 const actionTemplates = {
-  "Billing Issue": "Ask user to check billing portal.",
-  "Technical Problem": "Suggest user to restart their browser.",
-  "General Inquiry": "Respond with FAQ link.",
-  "Feature Request": "Ask user to check billing portal.",
-  "Unknown": "Review manually."
+  'Billing Issue': {
+    default: 'Check the customer\'s invoices and payment status, then reply with the fix or next step.',
+    High: 'Billing lead: verify the charge now, refund any duplicate or wrong charge, and confirm with the customer today.',
+  },
+  'Technical Problem': {
+    default: 'Collect steps to reproduce and browser/device details, then reply with a workaround or open a bug ticket.',
+    High: 'Escalate to the on-call engineer immediately (15-minute response) and send the customer an acknowledgement.',
+  },
+  'General Inquiry': {
+    default: 'Reply with the relevant FAQ or help-center link.',
+  },
+  'Feature Request': {
+    default: 'Thank the customer, log the request with the product team, and tell them it was logged.',
+  },
+  'Customer Feedback': {
+    default: 'Send a brief thank-you; no support action needed. Share praise with the team.',
+  },
+  Unknown: {
+    default: 'Review manually.',
+  },
 }
 
-/**
- * Get recommended action for a given category
- * 
- * @param {string} category - The message category
- * @param {string} urgency - The urgency level
- * @returns {string} - Recommended next step
- */
 export function getRecommendedAction(category, urgency) {
-  return actionTemplates[category] || "No recommendation available."
+  const entry = actionTemplates[category]
+  if (!entry) return 'No recommendation available.'
+  return entry[urgency] || entry.default
 }
 
-/**
- * Get all available categories
- * 
- * @returns {string[]} - List of categories
- */
 export function getAvailableCategories() {
   return Object.keys(actionTemplates)
 }
 
-/**
- * Determines if message should be escalated
- * 
- * @param {string} category - The message category
- * @param {string} urgency - The urgency level
- * @param {string} message - The original message
- * @returns {boolean} - Whether to escalate
- */
-export function shouldEscalate(category, urgency, message) {
-  return message.length > 100
+/** Escalate on impact (High urgency), not on message length. */
+export function shouldEscalate(category, urgency) {
+  return urgency === 'High' && category !== 'Customer Feedback'
 }

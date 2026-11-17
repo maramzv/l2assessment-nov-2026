@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { categorizeMessage } from '../utils/llmHelper'
-import { calculateUrgency } from '../utils/urgencyScorer'
-import { getRecommendedAction } from '../utils/templates'
+import { analyzeMessage } from '../utils/llmHelper'
 
 function AnalyzePage() {
   const [message, setMessage] = useState('')
@@ -28,14 +26,7 @@ function AnalyzePage() {
     setResults(null)
     
     try {
-      // Run categorization (LLM call)
-      const { category, reasoning } = await categorizeMessage(message)
-      
-      // Calculate urgency (rule-based)
-      const urgency = calculateUrgency(message)
-      
-      // Get recommended action (template-based)
-      const recommendedAction = getRecommendedAction(category)
+      const { category, urgency, recommendedAction, reasoning, escalate, source } = await analyzeMessage(message)
       
       const analysisResult = {
         message,
@@ -43,6 +34,8 @@ function AnalyzePage() {
         urgency,
         recommendedAction,
         reasoning,
+        escalate,
+        source,
         timestamp: new Date().toISOString()
       }
 
@@ -127,6 +120,11 @@ function AnalyzePage() {
         {/* Results Section */}
         {results && (
           <div className="bg-white rounded-lg shadow-md p-6">
+            {results.source === 'fallback' && (
+              <div className="mb-4 bg-yellow-50 border border-yellow-300 text-yellow-900 rounded-lg p-3 text-sm">
+                The AI could not be reached. This is a basic keyword guess, so please review it manually.
+              </div>
+            )}
             <h2 className="text-xl font-bold text-gray-900 mb-4">Analysis Results</h2>
             
             <div className="space-y-4">
@@ -146,6 +144,9 @@ function AnalyzePage() {
                 }`}>
                   {results.urgency}
                 </div>
+                {results.escalate && (
+                  <span className="ml-3 text-sm font-semibold text-red-700">Escalate now</span>
+                )}
               </div>
 
               <div>
