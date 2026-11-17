@@ -2,6 +2,29 @@
 
 The product only works if it (1) routes messages correctly and (2) never lets an urgent one sit in the queue. Findings are judged against those two goals.
 
+## Problem statement
+
+Relay AI promises that a small team can handle more customer volume without hiring more staff. That only holds if the triage tool sends each message to the right place and never lets an urgent one sit in the queue. The original app did neither reliably.
+- **It missed emergencies.** Urgency came from style (length, ALL CAPS, exclamation marks, politeness), not impact. "Server down now" and "I WAS CHARGED TWICE" scored Low, and "Thank you so much!!" scored High. It missed all 7 of the 7 High messages in the main test set.
+- **It hid its own failures.** The AI model the app called had been retired, and the app quietly showed keyword-based fake answers that looked like real AI output.
+- **Its routing advice was wrong.** Every technical problem said "restart your browser", feature requests said "check billing portal", and any message over 100 characters was escalated.
+
+## Solution statement
+
+I rebuilt the triage step around business impact.
+- **One structured AI call** returns category, urgency and reasoning from a fixed list of categories. The urgency rubric is based on outages, money, blocked customers and deadlines, and tells the AI to ignore tone, caps, punctuation and length.
+- **A safety rule** stops a clear emergency (outage, double charge, team locked out) from rating below High, even if the AI gets it wrong.
+- **Better actions and escalation:** each category has its own recommended action, High-urgency messages get owner-specific ones, and escalation follows urgency instead of message length.
+- **Honest failure:** when the AI can't be reached, the results page shows a visible warning instead of fake answers.
+
+## Why this delivers the most value
+
+- **It fixes the most costly mistake.** Missed outages and duplicate charges cause churn and refunds. The new pipeline missed 0 High messages on both test sets, down from 7 of 7 and 3 of 3.
+- **It was measured, not assumed.** On 8 messages written after the fix, with expected answers fixed in advance, the new version scored 8/8 on urgency and category; the original scored 4/8 on urgency.
+- **It protects trust in the product.** If the "High" tag is wrong, agents learn to ignore it. Correct urgency, plus a warning when the AI wasn't used, makes the tool reliable enough to lean on.
+- **It saves agent time.** The right action and escalation are suggested up front, supporting the "more volume, same staff" promise.
+- **It is small and safe.** The change touches a few files and has a rules backstop, so one bad AI answer can't bury an outage.
+
 ## Top 3 areas for improvement
 
 1. **Urgency scoring is backwards (biggest business impact).** `urgencyScorer.js` scored style, not impact: short messages, ALL CAPS, "please/thanks", `?`, the reader's clock and `!` all moved the score. Result: "Server down now" and "Database connection lost" are **Low**, "I WAS CHARGED TWICE..." is **Low**, a thank-you with `!` is boosted. Outages and double charges are the costliest misses.
